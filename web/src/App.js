@@ -138,7 +138,7 @@ class App extends Component {
   sendToPeer = (messageType, payload, socketID) => {
     this.socket.emit(messageType, {
       socketID,
-      payload
+      payload,
     })
   }
 
