@@ -34,10 +34,13 @@ let connectedPeers = new Map()
 
 peers.on('connection', socket => {
 
-  console.log(socket.id)
-  socket.emit('connection-success', { success: socket.id })
-
   connectedPeers.set(socket.id, socket)
+
+  console.log(socket.id)
+  socket.emit('connection-success', {
+    success: socket.id,
+    peerCount: connectedPeers.size,
+  })
 
   socket.on('disconnect', () => {
     console.log('disconnected')
@@ -46,11 +49,17 @@ peers.on('connection', socket => {
 
   socket.on('offerOrAnswer', (data) => {
     // send to the other peer(s) if any
+    // but if type=answer, then need to send to the offerer (only)
+    // data.socketID is the offerer
     for (const [socketID, socket] of connectedPeers.entries()) {
-      // don't send to self
-      if (socketID !== data.socketID) {
-        console.log(socketID, data.payload.type)
-        socket.emit('offerOrAnswer', data.payload)
+      // don't send to self and if type:answer then to offerer only
+      if ((data.payload.type === 'offer' && socketID !== data.socketID) || (data.payload.type === 'answer' && socketID === data.socketID)) {
+        console.log(socketID, data.socketID, data.payload.type)
+        socket.emit('offerOrAnswer', {
+            sdp: data.payload,
+            socketID: data.socketID
+          }
+        )
       }
     }
   })
@@ -60,7 +69,7 @@ peers.on('connection', socket => {
     for (const [socketID, socket] of connectedPeers.entries()) {
       // don't send to self
       if (socketID !== data.socketID) {
-        console.log(socketID, data.payload)
+        // console.log(socketID, data.payload)
         socket.emit('candidate', data.payload)
       }
     }
