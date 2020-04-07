@@ -1,60 +1,72 @@
+import React, {Component} from 'react'
+import Video from './Video'
 
-import React from 'react';
-import Video from './video';
+class Videos extends Component {
+  constructor(props) {
+    super(props)
 
-
-
-class Videos extends React.PureComponent {
-    constructor(props, context) {
-        super(props, context);
-
-        this.state = {
-            SessionVideos: [],
-            rVideos: []
-        };
+    this.state = {
+      rVideos: [],
+      remoteStreams: []
     }
+  }
 
-    componentWillReceiveProps(nextProps) {
-        debugger;
-        if (this.props.SessionVideos !== nextProps.SessionVideos) {
+  componentWillReceiveProps(nextProps) {
+    if (this.props.remoteStreams !== nextProps.remoteStreams) {
+      
+      let _rVideos = nextProps.remoteStreams.map((rVideo, index) => {
+        let video = <Video
+          videoStream={rVideo.stream}
+          frameStyle={{ width: 120, float: 'left', padding: '0 3px' }}
+          videoStyles={{
+            cursor: 'pointer',
+            objectFit: 'cover',
+            borderRadius: 3,
+            width: '100%',
+          }}
+        />
 
-            let _rVideos = nextProps.SessionVideos.map((rVideo, index) => {
-
-                // let video = <video id={rVideo.id} src= {URL.createObjectURL(rVideo.stream)} controls width="100%" height="100%" autoPlay="autoplay" muted={rVideo.muted}/>;
-
-                let video = <Video
-                              video={rVideo}
-                              frameStyle={{ width: 120, float: 'left', padding: '0 3px' }}
-                              videoStyle={{ cursor: 'pointer', objectFit: 'cover', borderRadius: 3, width: '100%' }}
-                              streamCallback={this.props.streamCallback}
-                            />
-
-                return (
-                    <div id={rVideo.name} onClick={() => this.props.switchVideo(rVideo)} className={rVideo.class} key={index}>
-                        {video}
-                    </div>
-                );
-            });
-
-            this.setState({
-                SessionVideos: nextProps.SessionVideos,
-                rVideos: _rVideos
-            });
-        }
-    }
-
-    switchVideo = () => {
-      debugger
-    }
-
-    render() {
         return (
-            <section id="videoSectionWeengu" ref={(ref)=> {this.section = ref}}>
-                {this.state.rVideos}
-            </section>
-        );
+          <div
+            id={rVideo.name}
+            onClick={() => this.props.switchVideo(rVideo)}
+            style={{ display: 'inline-block' }}
+            key={index}
+          >
+            {video}
+          </div>
+        )
+      })
+
+      this.setState({
+        remoteStreams: nextProps.remoteStreams,
+        rVideos: _rVideos
+      })
     }
+  }
+
+  render() {
+    return (
+      <div
+        style={{
+          zIndex: 3,
+          position: 'fixed',
+          padding: '6px 3px',
+          backgroundColor: 'rgba(0,0,0,0.3)',
+          maxHeight: 120,
+          top: 'auto',
+          right: 10,
+          left: 10,
+          bottom: 10,
+          overflowX: 'scroll',
+          whiteSpace: 'nowrap'
+        }}
+      >
+        { this.state.rVideos }
+      </div>
+    )
+  }
+
 }
 
-
-export default Videos;
+export default Videos
