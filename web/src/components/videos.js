@@ -9,50 +9,81 @@ class Videos extends React.PureComponent {
         super(props, context);
 
         this.state = {
-            SessionVideos: [],
+            remoteStreams: [],
             rVideos: []
         };
     }
 
     componentWillReceiveProps(nextProps) {
         debugger;
-        if (this.props.SessionVideos !== nextProps.SessionVideos) {
+        if (this.props.remoteStreams !== nextProps.remoteStreams) {
 
-            let _rVideos = nextProps.SessionVideos.map((rVideo, index) => {
-
-                // let video = <video id={rVideo.id} src= {URL.createObjectURL(rVideo.stream)} controls width="100%" height="100%" autoPlay="autoplay" muted={rVideo.muted}/>;
-
+            let _rVideos = nextProps.remoteStreams.map((rVideo, index) => {
+// alert(index)
                 let video = <Video
-                              video={rVideo}
-                              frameStyle={{ width: 120, float: 'left', padding: '0 3px' }}
-                              videoStyle={{ cursor: 'pointer', objectFit: 'cover', borderRadius: 3, width: '100%' }}
-                              streamCallback={this.props.streamCallback}
-                            />
+                  // videoRef={rVideo.stream}
+
+                  videoStream={rVideo.stream}
+                  frameStyle={{ width: 120, float: 'left', padding: '0 3px' }}
+                  videoStyles={{
+                    cursor: 'pointer',
+                    objectFit: 'cover',
+                    borderRadius: 3,
+                    width: '100%',
+                  }}
+                  // streamCallback={this.props.streamCallback}
+                />
 
                 return (
-                    <div id={rVideo.name} onClick={() => this.props.switchVideo(rVideo)} className={rVideo.class} key={index}>
-                        {video}
-                    </div>
+                  <div
+                    id={rVideo.name}
+                    // onClick={() => console.log(rVideo)}
+                    onClick={() => this.props.switchVideo(rVideo)}
+                    // className={rVideo.class}
+                    style={{ display: 'inline-block' }}
+                    key={index}
+                  >
+                    { video }
+                  </div>
                 );
             });
 
             this.setState({
-                SessionVideos: nextProps.SessionVideos,
+                remoteStreams: nextProps.remoteStreams,
                 rVideos: _rVideos
             });
         }
     }
 
-    switchVideo = () => {
-      debugger
-    }
+    // switchVideo = () => {
+    //   debugger
+    // }
 
     render() {
-        return (
-            <section id="videoSectionWeengu" ref={(ref)=> {this.section = ref}}>
-                {this.state.rVideos}
-            </section>
-        );
+      return (
+        // <section
+        //   id="videoSection"
+        //   ref={(ref) => { this.section = ref }}
+        //   style={{display: 'inline-block'}}
+        // >
+        <div style={{
+          zIndex: 3,
+          position: 'fixed',
+          padding: '6px 3px',
+          backgroundColor: 'rgba(0,0,0,0.3)',
+          // height: 120,
+          maxHeight: 120,
+          top: 'auto',
+          right: 10,
+          left: 10,
+          bottom: 10,
+          overflowX: 'scroll',
+          whiteSpace: 'nowrap'
+        }}>
+          {this.state.rVideos}
+        </div>
+        // </section>
+      );
     }
 }
 

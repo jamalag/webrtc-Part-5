@@ -7,12 +7,28 @@ class Video extends Component {
     this.state = {
 
     }
+
+    // this.videoRef = React.createRef()
   }
 
   componentDidMount() {
-      // if (this.props.videoRef) {
-      //     this.video.srcObject = this.props.videoRef.srcObject;
-      // }
+    // if (this.props.videoRef && this.props.videoRef.srcObject) {
+    //     this.video = this.props.videoRef.srcObject
+    // } else {
+    //   this.video = this.props.videoRef
+    // }
+    // this.video.current.srcObject = this.props.videoStream
+
+    if (this.props.videoStream) {
+      debugger
+      this.video.srcObject = this.props.videoStream
+    }
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.videoStream && nextProps.videoStream !== this.props.videoStream) {
+      this.video.srcObject = nextProps.videoStream;
+    }
   }
 
   render() {
@@ -20,18 +36,26 @@ class Video extends Component {
       id,
       videoStyles,
       muted,
-      videoRef
+      frameStyle,
+      videoRef,
+      // videoStream,
     } = this.props
 
+    // console.log('STREAM  ', videoStream)
+    // if(videoStream)
+    //     this.videoRef.current.srcObject = videoStream
+
     return (
-      <div>
+      <div
+        style={{ ...frameStyle }}
+      >
         <video
           id={id}
-          ref={(ref) => {this.video = ref; }}
+          ref={ (ref) => {this.video = ref } }
           muted={muted}
           autoPlay
           style={{ ...videoStyles }}
-          ref={ videoRef }
+          // ref={ videoRef }
         ></video>
       </div>
     )
