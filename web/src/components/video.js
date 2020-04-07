@@ -3,59 +3,35 @@ import React, { Component } from 'react';
 class Video extends Component {
   constructor(props) {
     super(props)
-
-    this.state = {
-
-    }
-
-    // this.videoRef = React.createRef()
+    this.state = {}
   }
 
   componentDidMount() {
-    // if (this.props.videoRef && this.props.videoRef.srcObject) {
-    //     this.video = this.props.videoRef.srcObject
-    // } else {
-    //   this.video = this.props.videoRef
-    // }
-    // this.video.current.srcObject = this.props.videoStream
-
     if (this.props.videoStream) {
-      debugger
       this.video.srcObject = this.props.videoStream
     }
   }
 
-  componentWillReceiveProps(nextProps) {
+  componentWillReceiveProps(nextProps) { 
+    console.log(nextProps.videoStream)
+
     if (nextProps.videoStream && nextProps.videoStream !== this.props.videoStream) {
-      this.video.srcObject = nextProps.videoStream;
+      this.video.srcObject = nextProps.videoStream
     }
   }
 
   render() {
-    const {
-      id,
-      videoStyles,
-      muted,
-      frameStyle,
-      videoRef,
-      // videoStream,
-    } = this.props
-
-    // console.log('STREAM  ', videoStream)
-    // if(videoStream)
-    //     this.videoRef.current.srcObject = videoStream
-
     return (
       <div
-        style={{ ...frameStyle }}
+        style={{ ...this.props.frameStyle }}
       >
         <video
-          id={id}
-          ref={ (ref) => {this.video = ref } }
-          muted={muted}
+          id={this.props.id}
+          muted={this.props.muted}
           autoPlay
-          style={{ ...videoStyles }}
-          // ref={ videoRef }
+          style={{ ...this.props.videoStyles }}
+          // ref={ this.props.videoRef }
+          ref={ (ref) => {this.video = ref }}
         ></video>
       </div>
     )

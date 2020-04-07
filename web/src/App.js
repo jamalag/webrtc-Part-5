@@ -11,21 +11,19 @@ class App extends Component {
 
     this.state = {
       localStream: null,    // used to hold local stream object to avoid recreating the stream everytime a new offer comes
-      remoteStream: null,    // used to hold remote stream object to avoid recreating the stream everytime a new offer comes
+      remoteStream: null,    // used to hold remote stream object that is displayed in the main screen
 
-      remoteStreams: [],    // holds all Video Streams (local and all remote streams)
+      remoteStreams: [],    // holds all Video Streams (all remote streams)
       peerConnections: {},  // holds all Peer Connections
+      selectedVideo: null,
 
-      selectedVideo: null,  
-
-      connecting: true, // Join button: hidden by default
       status: 'Please wait...',
 
       pc_config: {
         "iceServers": [
           {
             urls : 'stun:stun.l.google.com:19302'
-          },
+          }
         ]
       },
 
@@ -37,28 +35,28 @@ class App extends Component {
       },
     }
 
-    this.serviceIP = 'https://cc82bd38.ngrok.io'
+    // DONT FORGET TO CHANGE TO YOUR URL
+    this.serviceIP = 'https://cc82bd38.ngrok.io/webrtcPeer'
 
     // https://reactjs.org/docs/refs-and-the-dom.html
-    this.localVideoref = React.createRef()
-    this.remoteVideoref = React.createRef()
+    // this.localVideoref = React.createRef()
+    // this.remoteVideoref = React.createRef()
 
     this.socket = null
     // this.candidates = []
   }
 
   getLocalStream = () => {
-    // success called when getUserMedia() successfully returns - see below
-    // getUserMedia() returns a MediaStream object
-    // (https://developer.mozilla.org/en-US/docs/Web/API/MediaStream)
+    // called when getUserMedia() successfully returns - see below
+    // getUserMedia() returns a MediaStream object (https://developer.mozilla.org/en-US/docs/Web/API/MediaStream)
     const success = (stream) => {
       window.localStream = stream
-      // store stream to state so that we don't acquire everytime new peer joins
+      // this.localVideoref.current.srcObject = stream
+      // this.pc.addStream(stream);
       this.setState({
         localStream: stream
       })
 
-      // then connect to server...
       this.whoisOnline()
     }
 
@@ -71,16 +69,14 @@ class App extends Component {
     // see the above link for more constraint options
     const constraints = {
       // audio: true,
-      // video: true,
+      video: true,
       // video: {
       //   width: 1280,
       //   height: 720
       // },
-      video: {
-          width: 1280,
-        height: 720,
-        frameRate: { ideal: 10, max: 30 },
-      },
+      // video: {
+      //   width: { min: 1280 },
+      // }
       options: {
         mirror: true,
       }
@@ -92,21 +88,15 @@ class App extends Component {
       .catch(failure)
   }
 
-  joinPeers = () => {
-    // let all peers know I am joining
-    this.sendToPeer('joinPeers', null, this.socket.id)
-  }
-
   whoisOnline = () => {
     // let all peers know I am joining
     this.sendToPeer('onlinePeers', null, {local: this.socket.id})
   }
 
   sendToPeer = (messageType, payload, socketID) => {
-    console.log('Send To Peer:  ', messageType, socketID)
     this.socket.emit(messageType, {
       socketID,
-      payload,
+      payload
     })
   }
 
@@ -118,7 +108,7 @@ class App extends Component {
       // add pc to peerConnections object
       const peerConnections = { ...this.state.peerConnections, [socketID]: pc }
       this.setState({
-        peerConnections,
+        peerConnections
       })
 
       pc.onicecandidate = (e) => {
@@ -131,26 +121,22 @@ class App extends Component {
       }
 
       pc.oniceconnectionstatechange = (e) => {
-        if (pc.iceConnectionState === 'disconnected') {
-          // remove pc from list
-          // const remoteStreams = this.state.remoteStreams.filter(stream => stream.id !== socketID)
+        // if (pc.iceConnectionState === 'disconnected') {
+        //   const remoteStreams = this.state.remoteStreams.filter(stream => stream.id !== socketID)
 
-          // this.setState({
-          //     remoteStream: remoteStreams.length > 0 && remoteStreams[0].stream || null,
-          //     // remoteStreams,
-          //   }
-          // )
-        }
+        //   this.setState({
+        //     remoteStream: remoteStreams.length > 0 && remoteStreams[0].stream || null,
+        //   })
+        // }
+
       }
 
       pc.ontrack = (e) => {
-
         const remoteVideo = {
           id: socketID,
           name: socketID,
           stream: e.streams[0]
         }
-
 
         this.setState(prevState => {
 
@@ -159,20 +145,17 @@ class App extends Component {
 
           // get currently selected video
           let selectedVideo = prevState.remoteStreams.filter(stream => stream.id === prevState.selectedVideo.id)
-console.log("SELECTED", selectedVideo.length)
           // if the video is still in the list, then do nothing, otherwise set to new video stream
           selectedVideo = selectedVideo.length ? {} : { selectedVideo: remoteVideo }
 
           return {
             // selectedVideo: remoteVideo,
             ...selectedVideo,
-            // remoteStream: remoteStreams.length > 0 && remoteStreams[0].stream || e.streams[0],
+            // remoteStream: e.streams[0],
             ...remoteStream,
             remoteStreams: [...prevState.remoteStreams, remoteVideo]
           }
-        }, () => {console.log('remoteStreams :::', this.state.remoteStreams)})
-
-        // this.remoteVideoref.current.srcObject = e.streams[0]
+        })
       }
 
       pc.close = () => {
@@ -184,8 +167,8 @@ console.log("SELECTED", selectedVideo.length)
 
       // return pc
       callback(pc)
-    }
-    catch (e) {
+
+    } catch(e) {
       console.log('Something went wrong! pc not created!!', e)
       // return;
       callback(null)
@@ -194,10 +177,8 @@ console.log("SELECTED", selectedVideo.length)
 
   componentDidMount = () => {
 
-    // this.getLocalStream()
-
     this.socket = io.connect(
-      `${this.serviceIP}/webrtcPeer`,
+      this.serviceIP,
       {
         path: '/io/webrtc',
         query: {}
@@ -208,34 +189,11 @@ console.log("SELECTED", selectedVideo.length)
 
       this.getLocalStream()
 
-      console.log('connection-success: ', data.success, data.peerCount)
-
-      // if (data.peerCount > 1) {
-      //   // show Join button
-      //   this.setState({
-      //     connecting: false
-      //   })
-      // }
-
-      // this.joinPeers()
-      // this.whoisOnline()
-
-      const connecting = data.peerCount > 1 ? false : true
+      console.log(data.success)
       const status = data.peerCount > 1 ? `Total Connected Peers: ${data.peerCount}` : 'Waiting for other peers to connect'
 
-      // show Join button
       this.setState({
-        connecting,
         status: status
-      })
-    })
-
-    this.socket.on('joined-peers', data => {
-      console.log('payload', data)
-      // show Join button
-      this.setState({
-        connecting: false,
-        status: `Total Connected Peers: ${data.peerCount}`
       })
     })
 
@@ -245,11 +203,11 @@ console.log("SELECTED", selectedVideo.length)
       const remoteStreams = this.state.remoteStreams.filter(stream => stream.id !== data.socketID)
 
       this.setState(prevState => {
-
         // check if disconnected peer is the selected video and if there still connected peers, then select the first
         const selectedVideo = prevState.selectedVideo.id === data.socketID && remoteStreams.length ? { selectedVideo: remoteStreams[0] } : null
 
         return {
+          // remoteStream: remoteStreams.length > 0 && remoteStreams[0].stream || null,
           remoteStreams,
           ...selectedVideo,
         }
@@ -257,71 +215,49 @@ console.log("SELECTED", selectedVideo.length)
       )
     })
 
-    // this.socket.on('online-peer', data => {
-    //   console.log('payload', data)
-    //   // show Join button
-    //   this.setState({
-    //     // connecting: false,
-    //     status: `Total Connected Peers: ${data.peerCount}`
-    //   })
+    // this.socket.on('offerOrAnswer', (sdp) => {
+
+    //   this.textref.value = JSON.stringify(sdp)
+
+    //   // set sdp as remote description
+    //   this.pc.setRemoteDescription(new RTCSessionDescription(sdp))
     // })
 
     this.socket.on('online-peer', socketID => {
-      console.log('online-peer', socketID)
+      console.log('connected peers ...', socketID)
 
       // create and send offer to the peer (data.socketID)
       // 1. Create new pc
-      this.createPeerConnection(socketID, (pc) => {
+      this.createPeerConnection(socketID, pc => {
         // 2. Create Offer
-        if (pc)
-          pc.createOffer(this.state.sdpConstraints)
-            .then(sdp => {
+          if (pc)
+            pc.createOffer(this.state.sdpConstraints)
+              .then(sdp => {
+                pc.setLocalDescription(sdp)
 
-              // set offer sdp as local description
-              pc.setLocalDescription(sdp)
-
-              // // add pc to peerConnections object
-              // const peerConnections = { ...this.state.peerConnections, [data.socketID]: pc }
-              // this.setState({
-              //   peerConnections,
-              // })
-
-              // send offerer's socketID
-              this.sendToPeer('offer', sdp, {
-                local: this.socket.id,
-                remote: socketID
-              })
+                this.sendToPeer('offer', sdp, {
+                  local: this.socket.id,
+                  remote: socketID
+                })
           })
-      })
+        })
     })
 
     this.socket.on('offer', data => {
-      // console.log('offer', data)
-      // this.textref.value = JSON.stringify(data.sdp)
-      // create and send answer to offering peer (data.socketID)
-      // 1. Create new pc
-      this.createPeerConnection(data.socketID, (pc) => {
+      this.createPeerConnection(data.socketID, pc => {
         pc.addStream(this.state.localStream)
 
         pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(() => {
           // 2. Create Answer
           pc.createAnswer(this.state.sdpConstraints)
             .then(sdp => {
-
-              // set answer sdp as local description
               pc.setLocalDescription(sdp)
-
-              // // add pc to peerConnections object
-              // const peerConnections = { ...this.state.peerConnections, [data.socketID]: pc }
-              // this.setState({
-              //   peerConnections,
-              // })
 
               this.sendToPeer('answer', sdp, {
                 local: this.socket.id,
                 remote: data.socketID
               })
-          })
+            })
         })
       })
     })
@@ -329,7 +265,7 @@ console.log("SELECTED", selectedVideo.length)
     this.socket.on('answer', data => {
       // get remote's peerConnection
       const pc = this.state.peerConnections[data.socketID]
-
+      console.log(data.sdp)
       pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(()=>{})
     })
 
@@ -340,6 +276,55 @@ console.log("SELECTED", selectedVideo.length)
       if (pc)
         pc.addIceCandidate(new RTCIceCandidate(data.candidate))
     })
+
+    // const pc_config = null
+
+    // const pc_config = {
+    //   "iceServers": [
+    //     // {
+    //     //   urls: 'stun:[STUN_IP]:[PORT]',
+    //     //   'credentials': '[YOR CREDENTIALS]',
+    //     //   'username': '[USERNAME]'
+    //     // },
+    //     {
+    //       urls : 'stun:stun.l.google.com:19302'
+    //     }
+    //   ]
+    // }
+
+    // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection
+    // create an instance of RTCPeerConnection
+    // this.pc = new RTCPeerConnection(this.state.pc_config)
+
+    // triggered when a new candidate is returned
+    // this.pc.onicecandidate = (e) => {
+    //   // send the candidates to the remote peer
+    //   // see addCandidate below to be triggered on the remote peer
+    //   if (e.candidate) {
+    //     // console.log(JSON.stringify(e.candidate))
+    //     this.sendToPeer('candidate', e.candidate)
+    //   }
+    // }
+
+    // triggered when there is a change in connection state
+    // this.pc.oniceconnectionstatechange = (e) => {
+    //   console.log(e)
+    // }
+
+    // triggered when a stream is added to pc, see below - this.pc.addStream(stream)
+    // this.pc.onaddstream = (e) => {
+    //   this.remoteVideoref.current.srcObject = e.stream
+    // }
+
+    // this.pc.ontrack = (e) => {
+    //   debugger
+    //   // this.remoteVideoref.current.srcObject = e.streams[0]
+
+    //   this.setState({
+    //     remoteStream: e.streams[0]
+    //   })
+    // }
+
   }
 
   switchVideo = (_video) => {
@@ -350,79 +335,40 @@ console.log("SELECTED", selectedVideo.length)
   }
 
   render() {
-    const {
-      localStream,
-      remoteStream,
-      remoteStreams,
-      selectedVideo,
-      connecting,
-      status
-    } = this.state
 
-    // const joinButton = !remoteStream && !connecting && (
-    //   <button
-    //     style={{ color: 'grey', padding: 5 }}
-    //     onClick={this.joinPeers}>Join Conversation</button>
-    // ) || (
-    //   <div style={{ color: 'yellow', padding: 5 }}>{status}</div>
-    // )
+    console.log(this.state.localStream)
 
-    const statusText = <div style={{ color: 'yellow', padding: 5 }}>{status}</div>
+    const statusText = <div style={{ color: 'yellow', padding: 5 }}>{this.state.status}</div>
 
     return (
       <div>
-        {/* <video
-          style={{
-            zIndex: 2,
+        <Video
+          videoStyles={{
+            zIndex:2,
             position: 'absolute',
-            right: 0,
+            right:0,
             width: 200,
             height: 200,
             margin: 5,
-            backgroundColor: 'black',
+            backgroundColor: 'black'
           }}
-          ref={ this.localVideoref }
+          // ref={this.localVideoref}
+          videoStream={this.state.localStream}
           autoPlay muted>
-        </video> */}
+        </Video>
         <Video
           videoStyles={{
-            zIndex: 2,
-            position: 'absolute',
-            right: 0,
-            width: 200,
-            height: 200,
-            margin: 5,
-            backgroundColor: 'black',
-          }}
-          videoStream={localStream}
-          // videoRef={this.localVideoref}
-          vMuted={true}
-        />
-        {/* <video
-          style={{
             zIndex: 1,
             position: 'fixed',
             bottom: 0,
             minWidth: '100%',
             minHeight: '100%',
-            backgroundColor: 'black',
+            backgroundColor: 'black'
           }}
-          ref={ this.remoteVideoref }
+          // ref={ this.remoteVideoref }
+          videoStream={this.state.selectedVideo && this.state.selectedVideo.stream}
           autoPlay>
-        </video> */}
-        <Video
-          videoStyles={{
-            zIndex: 1,
-            position: 'fixed',
-            bottom: 0,
-            minWidth: '100%',
-            minHeight: '100%',
-            backgroundColor: 'black',
-          }}
-          videoStream={selectedVideo && selectedVideo.stream}
-          // videoRef={this.remoteVideoref}
-          vMuted={false}
-        />
+        </Video>
         <br />
         <div style={{
           zIndex: 3,
@@ -434,18 +380,24 @@ console.log("SELECTED", selectedVideo.length)
         }}>
           { statusText }
         </div>
-          {/* <br /><br />
-          <textarea
-            style={{ marginTop: 5, width: 350, height: 80 }}
-            ref={ref => { this.textref = ref }} /> */}
-        
         <div>
           <Videos
             switchVideo={this.switchVideo}
-            remoteStreams={remoteStreams}
-            // streamCallback={this.streamCallback}
-          />
+            remoteStreams={this.state.remoteStreams}
+          ></Videos>
         </div>
+        <br />
+
+        {/* <div style={{zIndex: 1, position: 'fixed'}} >
+          <button onClick={this.createOffer}>Offer</button>
+          <button onClick={this.createAnswer}>Answer</button>
+
+          <br />
+          <textarea style={{ width: 450, height:40 }} ref={ref => { this.textref = ref }} />
+        </div> */}
+        {/* <br />
+        <button onClick={this.setRemoteDescription}>Set Remote Desc</button>
+        <button onClick={this.addCandidate}>Add Candidate</button> */}
       </div>
     )
   }
